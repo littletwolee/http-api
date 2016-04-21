@@ -2,7 +2,7 @@
 %%% File    : mod_http_user.erl
 %%% Author  : LittleTwoLee <bruce>
 %%% Purpose : Handle incoming http 
-%%% Created : 15 Nov 2005 by LittleTwoLee <bruce>
+%%% Created : 21 Apr 2015 by LittleTwoLee <bruce>
 %%%----------------------------------------------------------------------
 
 -module(mod_http_user).

@@ -1,8 +1,8 @@
 %%%----------------------------------------------------------------------
-%%% File    : .erl
+%%% File    : tools.erl
 %%% Author  : LittleTwoLee <bruce>
-%%% Purpose :  
-%%% Created :  by LittleTwoLee <bruce>
+%%% Purpose : tools class
+%%% Created : 21 Apr 2015 by LittleTwoLee <bruce>
 %%%----------------------------------------------------------------------
 
 -module(tools).
