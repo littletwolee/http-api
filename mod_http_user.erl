@@ -2,7 +2,7 @@
 %%% File    : mod_http_user.erl
 %%% Author  : LittleTwoLee <bruce>
 %%% Purpose : Handle incoming http 
-%%% Created : 21 Apr 2015 by LittleTwoLee <bruce>
+%%% Created : 21 Apr 2016 by LittleTwoLee <bruce>
 %%%----------------------------------------------------------------------
 
 -module(mod_http_user).
@@ -24,7 +24,7 @@ start(_Host, _Opts) ->
 stop(_Host) ->
     ok.
 
-process(_, #request{method = 'POST', path = [<<"user">>,<<"register">>], data = Data}) ->
+process(_, #request{method = 'POST', path = [<<"api">>, <<"user">>, <<"register">>], data = Data}) ->
 %, q = [{<<"v">>,V},{<<"k">>,K}]
 
 %    tools:unauthorized_response(Data).

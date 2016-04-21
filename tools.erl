@@ -2,7 +2,7 @@
 %%% File    : tools.erl
 %%% Author  : LittleTwoLee <bruce>
 %%% Purpose : tools class
-%%% Created : 21 Apr 2015 by LittleTwoLee <bruce>
+%%% Created : 21 Apr 2016 by LittleTwoLee <bruce>
 %%%----------------------------------------------------------------------
 
 -module(tools).
@@ -149,7 +149,7 @@ hash_sha256_string(String) ->
     binary_to_list(iolist_to_binary([io_lib:format("~2.16.0b", [S]) || S <- binary_to_list(SHAString)])).
 
 %%%------------------------------------------------------------
-%%%SHA256 String
+%%%http_send_resquest
 %%%------------------------------------------------------------
 http_send(Mothed, Url, ContentType, Data) ->
     case httpc:request(Mothed, Url, [], ContentType, Data}, [], []) of   
