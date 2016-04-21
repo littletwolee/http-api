@@ -53,8 +53,9 @@
 	 json_response/2,
 	 timestamp/0,
 	 random_token/0,
-	 hash_sha256_string/1
-	 http_send/3]).
+	 hash_sha256_string/1,
+	 http_get/2,
+	 http_post/4]).
 
 start(_Host, _Opts) ->
     ok.
@@ -104,8 +105,23 @@ badrequest_response() ->
     {400, ?HEADER(?CT_XML),
      #xmlel{name = <<"h1">>, attrs = [],
             children = [{xmlcdata, <<"400 Bad Request">>}]}}.
+
 json_response(Code, Body) when is_integer(Code) ->
-    {Code, ?HEADER(?CT_JSON), Body}.
+    case Code of
+	501 -> {Code, ?HEADER(?CT_JSON), <<"501 Not implemented">>};
+	403 -> {Code, ?HEADER(?CT_JSON), <<"403 Forbidden">>};
+	401 -> {Code, ?HEADER(?CT_JSON), <<"401 Unauthorized">>};
+	414 -> {Code, ?HEADER(?CT_JSON), <<"414 Request URI too long">>};
+	405 -> {Code, ?HEADER(?CT_JSON), <<"405 Method not allowed">>};
+	501 -> {Code, ?HEADER(?CT_JSON), <<"501 Not implemented">>};
+	503 -> {Code, ?HEADER(?CT_JSON), <<"503 Service unavailable">>};
+        500 -> {Code, ?HEADER(?CT_JSON), <<"500 Internal server error">>};
+        400 -> {Code, ?HEADER(?CT_JSON), <<"400 Bad Request">>};
+        404 -> {Code, ?HEADER(?CT_JSON), <<"404 Not found">>};
+	413 -> {Code, ?HEADER(?CT_JSON), <<"413 Request entity too large">>};
+	406 -> {Code, ?HEADER(?CT_JSON), <<"406 ">>};
+        Res -> {Code, ?HEADER(?CT_JSON), Body}
+    end.
 %%%------------------------------------------------------------
 %%%添加时间戳
 %%%------------------------------------------------------------
@@ -149,10 +165,19 @@ hash_sha256_string(String) ->
     binary_to_list(iolist_to_binary([io_lib:format("~2.16.0b", [S]) || S <- binary_to_list(SHAString)])).
 
 %%%------------------------------------------------------------
-%%%http_send_resquest
+%%%http_get
 %%%------------------------------------------------------------
-http_send(Mothed, Url, ContentType, Data) ->
-    case httpc:request(Mothed, Url, [], ContentType, Data}, [], []) of   
+http_get(Mothed, Url) ->
+    case httpc:request(Mothed, {Url, []}, [], []) of   
+        {ok, {_,_,Result}}-> Result;  
+        {error, {_,_,Result}}->io:format("error cause ~p~n",[Result])
+    end.
+
+%%%------------------------------------------------------------
+%%%http_post
+%%%------------------------------------------------------------
+http_post(Mothed, Url, ContentType, Data) ->
+    case httpc:request(Mothed, {Url, [], ContentType, Data}, [], []) of   
         {ok, {_,_,Result}}-> Result;  
         {error, {_,_,Result}}->io:format("error cause ~p~n",[Result])
     end.

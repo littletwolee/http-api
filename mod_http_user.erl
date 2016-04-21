@@ -24,24 +24,39 @@ start(_Host, _Opts) ->
 stop(_Host) ->
     ok.
 
-process(_, #request{method = 'POST', path = [<<"api">>, <<"user">>, <<"register">>], data = Data}) ->
-%, q = [{<<"v">>,V},{<<"k">>,K}]
-
-%    tools:unauthorized_response(Data).
-%    io:format("~p",[LPath]),
-%    U = erlang:list_to_bitstring([V,"+++", K]),
-%    {List} = jiffy:decode(Data),
-%    {_, UserName} = lists:keyfind(<<"username">>, 1, List),
-%    {_, PassWord} = lists:keyfind(<<"password">>, 1, List),
-    tools:json_response(200, "22");
-process([], #request{method = 'GET', q = [{<<"k">>,K}]}) ->
-    io:format("~p",[K]),
+process(_, #request{method = 'POST', 
+		    path = [ <<"api">>, <<"user">>, <<"register">> ], 
+		    data = Data}) ->
+    {List} = jiffy:decode(Data),
+    {_, Name} = lists:keyfind(<<"name">>, 1, List),
+    {_, Pwd} = lists:keyfind(<<"pwd">>, 1, List),
+    Url = "http://localhost:8080/api/user/create",
+    SendData = jiffy:encode({[{<<"name">>, Name},{<<"pwd">>, Pwd}]}),
+    Result = tools:http_post(post, Url, "application/json", SendData),
+    tools:json_response(200, Result);
+process(_, #request{method = 'GET', 
+		     path = [ <<"api">>, <<"user">>, <<"getuserbyid">> ], 
+		     q = [{<<"objectId">>, ObjectId}]}) ->
+    Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/id/",ObjectId])),
+    Result = tools:http_get(get, Url),
+    %% Case httpc:request(get,{Url, [], [], []},[],[]) of   
+    %%     {ok, {_, _, Result}}-> Result;  
+    %%     {error, {_, _, Result}}->io:format("error cause ~p~n",[Result])  
+    %% end,
 %    Time = "1460015905",
 %    Salt = "83B214E255765F948B0ACD6954229D7B",
 %    RangeNum = [[7, 15, 23, 31], [10, 15, 23, 31]],
 %    HashSalt = re:replaced(string:substr(Salt, 7, 2)),
 %    Token = tools:hash_sha256_string(list_to_bitstring([tools:hash_sha256_string(Time),Salt])),
-    tools:json_response(200, K).
+    tools:json_response(200, Result);
+process(_, #request{method = 'DELETE', 
+		    path = [ <<"api">>, <<"user">>, <<"delete">> ], 
+		    q = [{_ , ObjectId}]}) ->
+    Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/delete/",ObjectId])),
+    Result = tools:http_get(delete, Url),
+    tools:json_response(200, [Result]).
+%% process(_, _) ->
+%%     tools:json_response(404, "").
 
 %splicesalt(RangeNum, Num, Str, Salt) ->
 %    if
