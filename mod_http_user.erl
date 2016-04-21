@@ -55,8 +55,8 @@ process(_, #request{method = 'DELETE',
     Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/delete/",ObjectId])),
     Result = tools:http_get(delete, Url),
     tools:json_response(200, [Result]).
-%% process(_, _) ->
-%%     tools:json_response(404, "").
+process(_, _) ->
+    tools:json_response(404, "").
 
 %splicesalt(RangeNum, Num, Str, Salt) ->
 %    if
