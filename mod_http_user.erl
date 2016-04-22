@@ -33,7 +33,9 @@ process(_, #request{method = 'POST',
     Url = "http://localhost:8080/api/user/create",
     SendData = jiffy:encode({[{<<"name">>, Name},{<<"pwd">>, Pwd}]}),
     Result = tools:http_post(post, Url, "application/json", SendData),
-    tools:json_response(200, Result);
+%    {ResultList} = jiffy:decode(Result),
+%    {_, Status} = lists:keyfind(<<"state">>, 1, List),
+    tools:json_response(200, [Result]);
 process(_, #request{method = 'GET', 
 		     path = [ <<"api">>, <<"user">>, <<"getuserbyid">> ], 
 		     q = [{<<"objectId">>, ObjectId}]}) ->
@@ -54,7 +56,7 @@ process(_, #request{method = 'DELETE',
 		    q = [{_ , ObjectId}]}) ->
     Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/delete/",ObjectId])),
     Result = tools:http_get(delete, Url),
-    tools:json_response(200, [Result]).
+    tools:json_response(200, [Result]);
 process(_, _) ->
     tools:json_response(404, "").
 

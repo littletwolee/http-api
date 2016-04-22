@@ -178,6 +178,7 @@ http_get(Mothed, Url) ->
 %%%------------------------------------------------------------
 http_post(Mothed, Url, ContentType, Data) ->
     case httpc:request(Mothed, {Url, [], ContentType, Data}, [], []) of   
-        {ok, {_,_,Result}}-> Result;  
+%        {ok, {_,_,Result}}-> Result;
+	{ok, Result}-> Result;  
         {error, {_,_,Result}}->io:format("error cause ~p~n",[Result])
     end.
