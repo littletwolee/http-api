@@ -18,6 +18,8 @@
 -include("logger.hrl").
 -include("ejabberd_http.hrl").
 
+-record(token, {key, value, outtime = 60}).  
+
 start(_Host, _Opts) ->
     ok.
 
@@ -32,10 +34,26 @@ process(_, #request{method = 'POST',
     {_, Pwd} = lists:keyfind(<<"pwd">>, 1, List),
     Url = "http://localhost:8080/api/user/create",
     SendData = jiffy:encode({[{<<"name">>, Name},{<<"pwd">>, Pwd}]}),
-    Result = tools:http_post(post, Url, "application/json", SendData),
-%    {ResultList} = jiffy:decode(Result),
-%    {_, Status} = lists:keyfind(<<"state">>, 1, List),
-    tools:json_response(200, [Result]);
+    case tools:http_post(post, Url, "application/json", SendData) of
+	{{_, 200, "OK"}, _, Result} ->
+	    {ResultList} = jiffy:decode(Result),
+	    {_, ObjectId} = lists:keyfind(<<"ObjectId">>, 1, ResultList),
+	    if ObjectId /= "" ->
+	    	    case mod_redis:set_token(#token{key = ObjectId, value = Pwd}) of
+	    		ok -> 
+	    		    tools:json_response(200, [jiffy:encode({[{state, <<"ok">>}]})]);
+	    		err ->
+	    		    TranUrl = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/delete/",ObjectId])),
+	    		    tools:http_get(delete, TranUrl),
+	    		    tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])
+	    	    end
+	    end;
+    %%mod_redis:set_token(#token{key = Name, value = Pwd}),
+	_ ->
+	    tools:json_response(200, "456")
+    end;
+    
+    
 process(_, #request{method = 'GET', 
 		     path = [ <<"api">>, <<"user">>, <<"getuserbyid">> ], 
 		     q = [{<<"objectId">>, ObjectId}]}) ->
