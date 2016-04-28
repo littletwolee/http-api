@@ -18,7 +18,8 @@
 -include("logger.hrl").
 -include("ejabberd_http.hrl").
 
--record(token, {key, value, outtime = 60}).  
+-record(kv, {key, value, outtime = 60}).  
+
 
 start(_Host, _Opts) ->
     ok.
@@ -39,7 +40,8 @@ process(_, #request{method = 'POST',
 	    {ResultList} = jiffy:decode(Result),
 	    {_, ObjectId} = lists:keyfind(<<"ObjectId">>, 1, ResultList),
 	    if ObjectId /= "" ->
-	    	    case mod_redis:set_token(#token{key = ObjectId, value = Pwd}) of
+		    io:format("~p",[ObjectId]),
+	    	    case mod_redis:set_kv(#kv{key = ObjectId, value = Pwd}) of
 	    		ok -> 
 	    		    tools:json_response(200, [jiffy:encode({[{state, <<"ok">>}]})]);
 	    		err ->
@@ -50,10 +52,17 @@ process(_, #request{method = 'POST',
 	    end;
     %%mod_redis:set_token(#token{key = Name, value = Pwd}),
 	_ ->
-	    tools:json_response(200, "456")
+	    tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])
     end;
+
+%% process(_, #request{method = 'POST', 
+%% 		   path = [ <<"api">>, <<"user">>, <<"login">>]}) ->
+%%     {List} = jiffy:decode(Data),
+%%     {_, Name} = lists:keyfind(<<"name">>, 1, List),
+%%     {_, Pwd} = lists:keyfind(<<"pwd">>, 1, List),
+%%     {_, Token} = lists:keyfind(<<"token">>, 1, List),
     
-    
+%%     tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})]);
 process(_, #request{method = 'GET', 
 		     path = [ <<"api">>, <<"user">>, <<"getuserbyid">> ], 
 		     q = [{<<"objectId">>, ObjectId}]}) ->
@@ -68,6 +77,20 @@ process(_, #request{method = 'GET',
 %    RangeNum = [[7, 15, 23, 31], [10, 15, 23, 31]],
 %    HashSalt = re:replaced(string:substr(Salt, 7, 2)),
 %    Token = tools:hash_sha256_string(list_to_bitstring([tools:hash_sha256_string(Time),Salt])),
+    tools:json_response(200, Result);
+process(_, #request{method = 'GET', 
+		     path = [ <<"api">>, <<"user">>, <<"test">> ]}) ->
+    Result = mod_versionrule:getrule("1.0.0"),
+    %% Case httpc:request(get,{Url, [], [], []},[],[]) of   
+    %%     {ok, {_, _, Result}}-> Result;  
+    %%     {error, {_, _, Result}}->io:format("error cause ~p~n",[Result])  
+    %% end,
+%    Time = "1460015905",
+%    Salt = "83B214E255765F948B0ACD6954229D7B",
+%    RangeNum = [[7, 15, 23, 31], [10, 15, 23, 31]],
+%    HashSalt = re:replaced(string:substr(Salt, 7, 2)),
+%    Token = tools:hash_sha256_string(list_to_bitstring([tools:hash_sha256_string(Time),Salt])),
+    io:format("~p",[Result]),
     tools:json_response(200, Result);
 process(_, #request{method = 'DELETE', 
 		    path = [ <<"api">>, <<"user">>, <<"delete">> ], 

@@ -11,11 +11,12 @@
 -behaviour(ejabberd_config).
 -behaviour(gen_mod).
 
--export([start/2, stop/1, set_kv/1, del_kv/1, get_v/1,
+-export([start/2, stop/1, set_kv/1, set_hash/1, del_kv/1, get_v/1, get_hashv/1,
 	 get_sessions/0, get_sessions/1, get_sessions/2,
 	 get_sessions/3, opt_type/1]).
 
 -record(kv, {key, value, outtime}).  
+-record(khash, {key, value, outtime}).
 
 -include("ejabberd.hrl").
 -include("ejabberd_sm.hrl").
@@ -66,7 +67,6 @@ init() ->
 
 -spec set_kv(#kv{}) -> ok.
 set_kv(KV) ->
-    term_to_binary(KV),
     K = KV#kv.key,
     V = KV#kv.value,
     T = KV#kv.outtime,
@@ -82,9 +82,19 @@ set_kv(KV) ->
 		{err, <<"err">>} -> err
 	    end
     end.
+-spec set_hash(#kv{}) -> ok | err.
+set_hash(KHash) ->
+    K = KHash#khash.key,
+    %H = KHash#khash.hash,
+    T = KHash#khash.outtime,
+    case eredis:q(?PROCNAME, ["HMSET", K | [7,7,7,7]]) of
+	{ok, <<"ok">>} -> ok;
+	{err, <<"err">>} -> err
+    end.
+
 -spec del_kv(binary()) -> ok | err.
 del_kv(K) ->
-   case eredis:q(?PROCNAME, ["DEL", k]) of
+   case eredis:q(?PROCNAME, ["DEL", K]) of
        {ok, <<"OK">>} -> ok;
        {err, <<"err">>} -> err
    end.
@@ -93,8 +103,17 @@ del_kv(K) ->
 get_v(K) ->
     case eredis:q(?PROCNAME, ["GET", K]) of
 	{ok, <<V>>} -> V;
+	{ok, undefined} -> undefined;
 	{err, <<"err">>} -> err
     end.
+-spec get_hashv(binary()) -> hash | err.
+get_hashv(K) ->
+    case eredis:q(?PROCNAME, ["HGETALL", K]) of
+	{ok ,V} -> V;
+	{ok, undefined} -> undefined;
+	{err, <<"err">>} -> err
+    end.
+
 -spec get_sessions() -> [#session{}].
 get_sessions() ->
     lists:flatmap(
