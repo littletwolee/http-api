@@ -80,7 +80,12 @@ process(_, #request{method = 'GET',
     tools:json_response(200, Result);
 process(_, #request{method = 'GET', 
 		     path = [ <<"api">>, <<"user">>, <<"test">> ]}) ->
-    Result = mod_versionrule:getrule("1.0.0"),
+    Name = "11",
+    Token = "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    Result = mod_versionrule:checktoken("5721e8a71d41c8212b7e9b66",
+				       "1.0.0",
+				       tools:hash_sha256_string(Name),
+				       Token),
     %% Case httpc:request(get,{Url, [], [], []},[],[]) of   
     %%     {ok, {_, _, Result}}-> Result;  
     %%     {error, {_, _, Result}}->io:format("error cause ~p~n",[Result])  
@@ -90,8 +95,7 @@ process(_, #request{method = 'GET',
 %    RangeNum = [[7, 15, 23, 31], [10, 15, 23, 31]],
 %    HashSalt = re:replaced(string:substr(Salt, 7, 2)),
 %    Token = tools:hash_sha256_string(list_to_bitstring([tools:hash_sha256_string(Time),Salt])),
-    io:format("~p",[Result]),
-    tools:json_response(200, Result);
+    tools:json_response(200, [Result]);
 process(_, #request{method = 'DELETE', 
 		    path = [ <<"api">>, <<"user">>, <<"delete">> ], 
 		    q = [{_ , ObjectId}]}) ->
