@@ -91,7 +91,7 @@ process(_, #request{method = 'GET',
 %    HashSalt = re:replaced(string:substr(Salt, 7, 2)),
 %    Token = tools:hash_sha256_string(list_to_bitstring([tools:hash_sha256_string(Time),Salt])),
     
-    case mod_versionrule:check_permissions("1.0.0", Headers) of
+    case mod_versionrule:check_permissions(Headers) of
     	true ->
     	    tools:json_response(200, "123");
     	false ->

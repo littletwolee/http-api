@@ -56,9 +56,11 @@ check_permissions(Headers) ->
 				    end;
 			  false -> false
 		      end,
-    if 
-	Authorization == false; Token == false; EncryptionToken == false ;Version == false-> false;
-	true -> mod_versionrule:checktoken(Version, Authorization, Token, EncryptionToken)
+    
+    case Authorization /= false andalso Token /= false andalso EncryptionToken /= false andalso Version /= false andalso
+	string:len(Authorization) == 64 andalso string:len(Token) == 64 andalso string:len(EncryptionToken) == 64 of
+	true -> mod_versionrule:checktoken(Version, Authorization, Token, EncryptionToken);
+	false -> false
     end.
 
 -spec checktoken(binary(), binary(), binary(), binary()) -> boolean() | err.
@@ -73,6 +75,7 @@ checktoken(Version, Authorization, Token, EncryptionToken) ->
 				 string:join(
 				   lists:append(
 				     lists:zipwith(fun(X, Y) -> [X, Y] end, ListPar, ListToken)), "")))
+	    
     end.
     
 -spec evenlysplit(binary(), integer) -> [] | err.
