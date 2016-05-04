@@ -26,27 +26,18 @@ start(_Host, _Opts) ->
 stop(_Host) ->
     ok.
 
--spec checktoken(binary(), binary(), binary(), binary()) -> boolean |err.
-checktoken(ObjectId, Version, ParameterToken, Token) ->
+-spec checktoken(binary(), binary(), binary(), binary()) -> boolean() | err.
+checktoken(Version, Authorization, Token, EncryptionToken) ->
     case getrule(Version) of
 	err -> err;
 	Rule -> 
-	    ListPar = rulesplit(ParameterToken, Rule),
-	    ListToken = evenlysplit(Token, Rule),
-	    Result = tools:hash_sha256_string(
-		       string:join(
-			 lists:append(
-			   lists:zipwith(fun(X, Y) -> [X, Y] end, ListPar, ListToken)), "")),
-	    Pwd = fun(ObjectId) ->
-			  case mod:get_v(ObjectId) of
-			      undefined -> getpwdbyhttp(ObjectId);	    
-			      err -> getpwdbyhttp(ObjectId);
-			      Other -> Other
-			  end,
-	    case Pwd of
-		Result -> true;
-		Other -> false
-	    end
+	    ListPar = rulesplit(Authorization, Rule),
+	    ListToken = rulesplit(Token, Rule),
+	    string:equal(
+	      EncryptionToken, tools:hash_sha256_string(
+				 string:join(
+				   lists:append(
+				     lists:zipwith(fun(X, Y) -> [X, Y] end, ListPar, ListToken)), "")))
     end.
     
 -spec evenlysplit(binary(), integer) -> [] | err.
@@ -79,7 +70,7 @@ getrule(Version) ->
 	undefined ->
 	    getrulebyhttp(Version);
 	Other -> 
-	    Other
+	    binary_to_list(Other)
     end.
 
 -spec getrulebyhttp(binary()) -> [] | err.

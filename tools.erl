@@ -48,9 +48,10 @@
 
 -export([start/2,
 	 stop/1,
-	 unauthorized_response/1, 
+	 unauthorized_response/0, 
 	 badrequest_response/0,
 	 json_response/2,
+	 json_response/1,
 	 timestamp/0,
 	 random_token/0,
 	 hash_sha256_string/1,
@@ -96,10 +97,10 @@ format_result(Tuple, {Name, {tuple, Def}}) ->
 
 format_result(404, {_Name, _}) ->
     "not_found".
-unauthorized_response(D) ->
+unauthorized_response() ->
     {401, ?HEADER(?CT_XML),
      #xmlel{name = <<"h1">>, attrs = [],
-            children = [{xmlcdata, <<D>>}]}}.
+            children = [{xmlcdata, <<"Unauthorized">>}]}}.
 
 badrequest_response() ->
     {400, ?HEADER(?CT_XML),
@@ -107,6 +108,8 @@ badrequest_response() ->
             children = [{xmlcdata, <<"400 Bad Request">>}]}}.
 
 json_response(Code, Body) when is_integer(Code) ->
+     {Code, ?HEADER(?CT_JSON), Body}.
+json_response(Code) when is_integer(Code) ->
     case Code of
 	501 -> {Code, ?HEADER(?CT_JSON), <<"501 Not implemented">>};
 	403 -> {Code, ?HEADER(?CT_JSON), <<"403 Forbidden">>};
@@ -119,9 +122,9 @@ json_response(Code, Body) when is_integer(Code) ->
         400 -> {Code, ?HEADER(?CT_JSON), <<"400 Bad Request">>};
         404 -> {Code, ?HEADER(?CT_JSON), <<"404 Not found">>};
 	413 -> {Code, ?HEADER(?CT_JSON), <<"413 Request entity too large">>};
-	406 -> {Code, ?HEADER(?CT_JSON), <<"406 ">>};
-        Res -> {Code, ?HEADER(?CT_JSON), Body}
+	406 -> {Code, ?HEADER(?CT_JSON), <<"406 ">>}
     end.
+
 %%%------------------------------------------------------------
 %%%添加时间戳
 %%%------------------------------------------------------------
@@ -182,3 +185,5 @@ http_post(Mothed, Url, ContentType, Data) ->
 	{ok, Result}-> Result;  
         {error, {_,_,Result}}->io:format("error cause ~p~n",[Result])
     end.
+
+

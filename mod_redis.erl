@@ -102,7 +102,7 @@ del_kv(K) ->
 -spec get_v(binary()) -> binary() | err.
 get_v(K) ->
     case eredis:q(?PROCNAME, ["GET", K]) of
-	{ok, <<V>>} -> V;
+	{ok, V} -> V;
 	{ok, undefined} -> undefined;
 	{err, <<"err">>} -> err
     end.

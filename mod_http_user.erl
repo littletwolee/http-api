@@ -11,7 +11,7 @@
 
 -behaviour(gen_mod).
 
--export([start/2, stop/1, process/2]).
+-export([start/2, stop/1, process/2, check_permissions/2]).
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
@@ -27,6 +27,37 @@ start(_Host, _Opts) ->
 stop(_Host) ->
     ok.
 
+-spec check_permissions(binary(), []) -> boolean().
+check_permissions(Version, Headers) ->
+    Authorization = case lists:keyfind('Authorization', 1, Headers) of
+			{_, A} -> case is_binary(A) of
+				      true -> binary_to_list(A);
+				     false -> A
+				  end;
+    		        false -> false	
+    		    end,
+    Token = case lists:keyfind(<<"Token">>, 1, Headers) of
+		{_, T} -> case is_binary(T) of
+			      true -> binary_to_list(T);
+			      false -> T
+			  end;
+		false -> false
+	    end,
+    EncryptionToken = case lists:keyfind(<<"Encryptiontoken">>, 1, Headers) of
+			  {_, E} -> case is_binary(E) of
+					true -> binary_to_list(E);
+					false -> E
+				    end;
+			  false -> false
+		      end,
+    if 
+	Authorization == false; Token == false; EncryptionToken == false -> false;
+	%% ture -> case mod_versionrule:checktoken(Version, Authorization, Token) of
+	%% 	    err ->false;
+	%% 	    Other -> ok
+	%% 	end
+	true -> mod_versionrule:checktoken(Version, Authorization, Token, EncryptionToken)
+    end.
 process(_, #request{method = 'POST', 
 		    path = [ <<"api">>, <<"user">>, <<"register">> ], 
 		    data = Data}) ->
@@ -65,7 +96,7 @@ process(_, #request{method = 'POST',
 %%     tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})]);
 process(_, #request{method = 'GET', 
 		     path = [ <<"api">>, <<"user">>, <<"getuserbyid">> ], 
-		     q = [{<<"objectId">>, ObjectId}]}) ->
+		     q = [{<<"objectId">>, ObjectId}, {<<"token">>, Token}, {<<"usertoken">>, UserToken}, {<<"encryptiontoken">>, EncryptionToken}]}) ->
     Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/id/",ObjectId])),
     Result = tools:http_get(get, Url),
     %% Case httpc:request(get,{Url, [], [], []},[],[]) of   
@@ -78,14 +109,15 @@ process(_, #request{method = 'GET',
 %    HashSalt = re:replaced(string:substr(Salt, 7, 2)),
 %    Token = tools:hash_sha256_string(list_to_bitstring([tools:hash_sha256_string(Time),Salt])),
     tools:json_response(200, Result);
-process(_, #request{method = 'GET', 
-		     path = [ <<"api">>, <<"user">>, <<"test">> ]}) ->
+process(_, #request{method = 'GET',
+		    path = [ <<"api">>, <<"user">>, <<"test">> ],
+		    auth = HTTPAuth, headers = Headers} = Req) ->
     Name = "11",
-    Token = "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
-    Result = mod_versionrule:checktoken("5721e8a71d41c8212b7e9b66",
-				       "1.0.0",
-				       tools:hash_sha256_string(Name),
-				       Token),
+    Token = "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+    %% Result = mod_versionrule:checktoken("5721e8a71d41c8212b7e9b66",
+    %% 				       "1.0.0",
+    %% 				       tools:hash_sha256_string(Name),
+    %% 				       Token),
     %% Case httpc:request(get,{Url, [], [], []},[],[]) of   
     %%     {ok, {_, _, Result}}-> Result;  
     %%     {error, {_, _, Result}}->io:format("error cause ~p~n",[Result])  
@@ -95,14 +127,26 @@ process(_, #request{method = 'GET',
 %    RangeNum = [[7, 15, 23, 31], [10, 15, 23, 31]],
 %    HashSalt = re:replaced(string:substr(Salt, 7, 2)),
 %    Token = tools:hash_sha256_string(list_to_bitstring([tools:hash_sha256_string(Time),Salt])),
-    tools:json_response(200, [Result]);
+    
+    case check_permissions("1.0.0", Headers) of
+    	true ->
+    	    tools:json_response(200, "123");
+    	false ->
+    	    tools:json_response(401)
+    end;
+%    tools:json_response(200, "");
+    %% A = "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+    %% T = "0bb2206f1e8a88d0f9a8ebbfd595f6d59dbdbc75ed5a340fad929feac64183de",
+    %% E = mod_versionrule:checktoken("1.0.0", A, T),
+    %% tools:json_response(200, [E]);
 process(_, #request{method = 'DELETE', 
 		    path = [ <<"api">>, <<"user">>, <<"delete">> ], 
 		    q = [{_ , ObjectId}]}) ->
     Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/delete/",ObjectId])),
     Result = tools:http_get(delete, Url),
     tools:json_response(200, [Result]);
-process(_, _) ->
+process(_, Req) ->
+    io:format("~p", [Req]),
     tools:json_response(404, "").
 
 %splicesalt(RangeNum, Num, Str, Salt) ->
