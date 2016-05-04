@@ -11,7 +11,7 @@
 
 -behaviour(gen_mod).
 
--export([start/2, stop/1, process/2, check_permissions/1]).
+-export([start/2, stop/1, process/2]).
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
@@ -27,45 +27,11 @@ start(_Host, _Opts) ->
 stop(_Host) ->
     ok.
 
--spec check_permissions([]) -> boolean().
-check_permissions(Headers) ->
-    Authorization = case lists:keyfind('Authorization', 1, Headers) of
-			{_, A} -> case is_binary(A) of
-				      true -> binary_to_list(A);
-				     false -> A
-				  end;
-    		        false -> false	
-    		    end,
-    Token = case lists:keyfind(<<"Token">>, 1, Headers) of
-		{_, T} -> case is_binary(T) of
-			      true -> binary_to_list(T);
-			      false -> T
-			  end;
-		false -> false
-	    end,
-    EncryptionToken = case lists:keyfind(<<"Encryptiontoken">>, 1, Headers) of
-			  {_, E} -> case is_binary(E) of
-					true -> binary_to_list(E);
-					false -> E
-				    end;
-			  false -> false
-		      end,
-    Version = case lists:keyfind(<<"Version">>, 1, Headers) of
-			  {_, V} -> case is_binary(V) of
-					true -> binary_to_list(V);
-					false -> V
-				    end;
-			  false -> false
-		      end,
-    if 
-	Authorization == false; Token == false; EncryptionToken == false ;Version == false-> false;
-	true -> mod_versionrule:checktoken(Version, Authorization, Token, EncryptionToken)
-    end.
 process(_, #request{method = 'POST', 
 		    path = [ <<"api">>, <<"user">>, <<"register">> ], 
 		    headers = Headers,
 		    data = Data}) ->
-    case check_permissions(Headers) of
+    case mod_versionrule:check_permissions(Headers) of
 	true ->
 	    {List} = jiffy:decode(Data),
 	    {_, Name} = lists:keyfind(<<"name">>, 1, List),
@@ -94,9 +60,10 @@ process(_, #request{method = 'POST',
 	    tools:json_response(401)
     end;
 process(_, #request{method = 'GET', 
-		     path = [ <<"api">>, <<"user">>, <<"getuserbyid">> ], 
-		     q = [{<<"objectId">>, ObjectId}]}) ->
-    case check_permissions(Headers) of
+		    path = [ <<"api">>, <<"user">>, <<"getuserbyid">> ], 
+		    headers = Headers,
+		    q = [{<<"objectId">>, ObjectId}]}) ->
+    case mod_versionrule:check_permissions(Headers) of
 	true ->
 	    Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/id/",ObjectId])),
 	    Result = tools:http_get(get, Url),
@@ -124,7 +91,7 @@ process(_, #request{method = 'GET',
 %    HashSalt = re:replaced(string:substr(Salt, 7, 2)),
 %    Token = tools:hash_sha256_string(list_to_bitstring([tools:hash_sha256_string(Time),Salt])),
     
-    case check_permissions("1.0.0", Headers) of
+    case mod_versionrule:check_permissions("1.0.0", Headers) of
     	true ->
     	    tools:json_response(200, "123");
     	false ->
@@ -137,8 +104,9 @@ process(_, #request{method = 'GET',
     %% tools:json_response(200, [E]);
 process(_, #request{method = 'DELETE', 
 		    path = [ <<"api">>, <<"user">>, <<"delete">> ], 
+		    headers = Headers,
 		    q = [{_ , ObjectId}]}) ->
-    case check_permissions(Headers) of
+    case mod_versionrule:check_permissions(Headers) of
 	true ->
 	    Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/delete/",ObjectId])),
 	    Result = tools:http_get(delete, Url),
@@ -147,5 +115,4 @@ process(_, #request{method = 'DELETE',
 	    tools:json_response(401)
     end;
 process(_, Req) ->
-    io:format("~p", [Req]),
     tools:json_response(404, "").

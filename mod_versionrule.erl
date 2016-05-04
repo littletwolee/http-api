@@ -11,7 +11,7 @@
 
 -behaviour(gen_mod).
 
--export([start/2, stop/1, checktoken/4]).
+-export([start/2, stop/1, checktoken/4, check_permissions/1]).
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
@@ -25,6 +25,41 @@ start(_Host, _Opts) ->
 
 stop(_Host) ->
     ok.
+
+-spec check_permissions([]) -> boolean().
+check_permissions(Headers) ->
+    Authorization = case lists:keyfind('Authorization', 1, Headers) of
+			{_, A} -> case is_binary(A) of
+				      true -> binary_to_list(A);
+				     false -> A
+				  end;
+    		        false -> false	
+    		    end,
+    Token = case lists:keyfind(<<"Token">>, 1, Headers) of
+		{_, T} -> case is_binary(T) of
+			      true -> binary_to_list(T);
+			      false -> T
+			  end;
+		false -> false
+	    end,
+    EncryptionToken = case lists:keyfind(<<"Encryptiontoken">>, 1, Headers) of
+			  {_, E} -> case is_binary(E) of
+					true -> binary_to_list(E);
+					false -> E
+				    end;
+			  false -> false
+		      end,
+    Version = case lists:keyfind(<<"Version">>, 1, Headers) of
+			  {_, V} -> case is_binary(V) of
+					true -> binary_to_list(V);
+					false -> V
+				    end;
+			  false -> false
+		      end,
+    if 
+	Authorization == false; Token == false; EncryptionToken == false ;Version == false-> false;
+	true -> mod_versionrule:checktoken(Version, Authorization, Token, EncryptionToken)
+    end.
 
 -spec checktoken(binary(), binary(), binary(), binary()) -> boolean() | err.
 checktoken(Version, Authorization, Token, EncryptionToken) ->
