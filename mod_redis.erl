@@ -38,23 +38,13 @@ stop(_Host) ->
 -spec init() -> ok | {error, any()}.
 init() ->
     Server = ejabberd_config:get_option(redis_server, fun iolist_to_list/1, "localhost"),
-    Port = ejabberd_config:get_option(redis_port,
-				      fun(P) when is_integer(P), P>0, P<65536 ->
-					      P
-				      end, 6379),
-    DB = ejabberd_config:get_option(redis_db,
-				    fun(I) when is_integer(I), I >= 0 ->
-					    I
-				    end, 0),
+    Port = ejabberd_config:get_option(redis_port, fun(P) when is_integer(P), P>0, P<65536 -> P end, 6379),
+    DB = ejabberd_config:get_option(redis_db, fun(I) when is_integer(I), I >= 0 -> I end, 0),
     Pass = ejabberd_config:get_option(redis_password, fun iolist_to_list/1, ""),
-    ReconnTimeout = timer:seconds(ejabberd_config:get_option(redis_reconnect_timeout,
-							     fun(I) when is_integer(I), I>0 -> 
-								     I 
-							     end, 1)),
-    ConnTimeout = timer:seconds(ejabberd_config:get_option(redis_connect_timeout,
-							   fun(I) when is_integer(I), I>0 -> 
-								   I 
-							   end, 1)),
+    ReconnTimeout = timer:seconds(
+		      ejabberd_config:get_option(redis_reconnect_timeout, fun(I) when is_integer(I), I>0 -> I end, 1)),
+    ConnTimeout = timer:seconds(
+		    ejabberd_config:get_option(redis_connect_timeout, fun(I) when is_integer(I), I>0 -> I end, 1)),
     case eredis:start_link(Server, Port, DB, Pass, ReconnTimeout, ConnTimeout) of
 	{ok, Client} ->
 	    register(?PROCNAME, Client),
