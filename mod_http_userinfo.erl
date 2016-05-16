@@ -35,38 +35,50 @@ process(_, #request{method = 'POST',
 		    path = [ <<"api">>, <<"userinfo">>, <<"create">> ], 
 		    headers = Headers,
 		    data = Data}) ->
-    {List} = jiffy:decode(Data),
-    io:format("~p", [List]),
-    {_, Name} = lists:keyfind(<<"name">>, 1, List),
-    {_, Signature} = lists:keyfind(<<"signature">>, 1, List),
-    {_, Address} = lists:keyfind(<<"address">>, 1, List),
-    {_, Gender} = lists:keyfind(<<"gender">>, 1, List),
-    {_, Area} = lists:keyfind(<<"area">>, 1, List),
-    %% SendData = jiffy:encode({[{<<"name">>, Name}, 
-    %% 			      {<<"signature">>, Signature},
-    %% 			      {<<"address">>, Address},
-    %% 			      {<<"gender">>, Gender},
-    %% 			      {<<"area">>, Area}]}),
-    ?INFO_MSG(Area, []),
-    io:format("~p", [Area]);
-    %% case tools:http_post(post, get_url("create"), "application/json", SendData) of
-    %% 	{{_, 200, "OK"}, _, Result} ->
-    %% 	    {ResultList} = jiffy:decode(Result);
-    %% 	_ ->
-    %% 	    tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])
-    %% end;
+    case tools:http_post(post, get_url("create"), "application/json", Data) of
+    	{{_, 200, "OK"}, _, Result} ->
+    	    {ResultList} = jiffy:decode(Result),
+	    tools:json_response(200, Result);
+    	_ ->
+    	    tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])
+    end;
+%%%------------------------------------------------------------
+%%% api/userinfo/id?
+%%%------------------------------------------------------------
 process(_, #request{method = 'GET', 
 		    path = [ <<"api">>, <<"userinfo">>, <<"id">> ], 
 		    headers = Headers,
-		    q = [{<<"imid">>, ObjectId}]}) ->
-    Result = tools:http_get(get, get_url(lists:append(["id/", ObjectId]))),
-    tools:json_response(200, Result);
+		    q = [{_, ObjectId}]}) ->
+    Result = tools:http_get(get, get_url(lists:append(["id/", binary_to_list(ObjectId)]))),
+    tools:json_response(200, [Result]);
+%%%------------------------------------------------------------
+%%% api/userinfo/delete?
+%%%------------------------------------------------------------
 process(_, #request{method = 'DELETE', 
 		    path = [ <<"api">>, <<"userinfo">>, <<"delete">> ], 
 		    headers = Headers,
 		    q = [{_ , ObjectId}]}) ->
-    Result = tools:http_get(delete, get_url(lists:append(["delete/", ObjectId]))),
+    Result = tools:http_get(delete, get_url(lists:append(["delete/", binary_to_list(ObjectId)]))),
     tools:json_response(200, [Result]);
+
+process(_, #request{method = 'POST',
+		    path = [ <<"api">>, <<"userinfo">>, <<"uploadpic">> ], 
+		    headers = Headers,
+		    data = Data}) ->
+    {_, ContentType} = lists:keyfind('Content-Type', 1, Headers),
+    case tools:http_post(post, get_url("uploadpic"), binary_to_list(ContentType), Data) of
+    	{{_, 200, "OK"}, _, Result} ->
+    	    {ResultList} = jiffy:decode(Result),
+    	    tools:json_response(200, Result);
+    	_ ->
+    	    tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])
+    end;
+process(_, #request{method = 'GET',
+		    path = [ <<"api">>, <<"userinfo">>, <<"downloadpic">> ], 
+		    q = [{_, ObjectId}]}) ->
+    {Headers, Result} = tools:http_get_file(get, get_url(lists:append(["downloadpic/", binary_to_list(ObjectId)]))),
+    {_, ContentType} = lists:keyfind("content-type", 1, Headers),
+    tools:file_response(200, Result, ContentType);
 process(_, _) ->
     tools:json_response(404, "").
 
@@ -78,7 +90,6 @@ iolist_to_list(IOList) ->
 
 get_url(ParStr) ->
     Host = ejabberd_config:get_option(golangapihost, fun iolist_to_list/1, "localhost"),
-    io:format("~p", [Host]),
     Port = ejabberd_config:get_option(golangapiport, fun iolist_to_list/1, "8080"),
     Mode = "userinfo",
     Url = lists:append(["http://", Host, ":", Port, "/api/", Mode, "/"]),

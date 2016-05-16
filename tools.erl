@@ -50,11 +50,13 @@
 	 stop/1,
 	 unauthorized_response/0, 
 	 badrequest_response/0,
+	 file_response/3,
 	 json_response/2,
 	 json_response/1,
 	 timestamp/0,
 	 random_token/0,
 	 hash_sha256_string/1,
+	 http_get_file/2,
 	 http_get/2,
 	 http_post/4]).
 
@@ -106,9 +108,10 @@ badrequest_response() ->
     {400, ?HEADER(?CT_XML),
      #xmlel{name = <<"h1">>, attrs = [],
             children = [{xmlcdata, <<"400 Bad Request">>}]}}.
-
+file_response(Code, Body, ContentType) when is_integer(Code) ->
+    {Code, ?HEADER({<<"Content-Type">>, ContentType}), Body}.
 json_response(Code, Body) when is_integer(Code) ->
-     {Code, ?HEADER(?CT_JSON), Body}.
+    {Code, ?HEADER(?CT_JSON), Body}.
 json_response(Code) when is_integer(Code) ->
     case Code of
 	501 -> {Code, ?HEADER(?CT_JSON), <<"501 Not implemented">>};
@@ -171,9 +174,19 @@ hash_sha256_string(String) ->
 %%%http_get
 %%%------------------------------------------------------------
 http_get(Mothed, Url) ->
-    case httpc:request(Mothed, {Url, []}, [], []) of   
+    case httpc:request(Mothed, {Url, []}, [], []) of 
+	Response -> Response;
         {ok, {_,_,Result}}-> Result;  
         {error, {_,_,Result}}->io:format("error cause ~p~n",[Result])
+    end.
+
+%%%------------------------------------------------------------
+%%%http_get_file
+%%%------------------------------------------------------------
+http_get_file(Mothed, Url) ->
+    case httpc:request(Mothed, {Url, []}, [], []) of 
+        {ok, {_, Headers, Result}}-> {Headers, Result};  
+        {error, {_, _, Result}}->tools:json_response(200, [Result])
     end.
 
 %%%------------------------------------------------------------
