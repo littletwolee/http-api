@@ -175,7 +175,6 @@ hash_sha256_string(String) ->
 %%%------------------------------------------------------------
 http_get(Mothed, Url) ->
     case httpc:request(Mothed, {Url, []}, [], []) of 
-	Response -> Response;
         {ok, {_,_,Result}}-> Result;  
         {error, {_,_,Result}}->io:format("error cause ~p~n",[Result])
     end.

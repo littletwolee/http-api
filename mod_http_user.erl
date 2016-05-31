@@ -43,7 +43,6 @@ process(_, #request{method = 'POST',
 		    {ResultList} = jiffy:decode(Result),
 		    {_, ObjectId} = lists:keyfind(<<"ObjectId">>, 1, ResultList),
 		    if ObjectId /= "" ->
-			    io:format("~p",[ObjectId]),
 			    case mod_redis:set_kv(#kv{key = ObjectId, value = Pwd}) of
 				ok -> 
 				    tools:json_response(200, [jiffy:encode({[{state, <<"ok">>}]})]);
@@ -60,17 +59,24 @@ process(_, #request{method = 'POST',
     %% 	    tools:json_response(401)
     %% end;
 process(_, #request{method = 'GET', 
-		    path = [ <<"api">>, <<"user">>, <<"getuserbyid">> ], 
+		    path = [ <<"api">>, <<"user">>, <<"login">> ], 
 		    headers = Headers,
-		    q = [{<<"objectId">>, ObjectId}]}) ->
-    case mod_versionrule:check_permissions(Headers) of
-	true ->
-	    Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/id/",ObjectId])),
+		    q = [{<<"username">>, UserName}, {<<"password">>, PassWord}]}) ->
+    %% case mod_versionrule:check_permissions(Headers) of
+    %% 	true ->
+	    Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/name/",UserName])),
 	    Result = tools:http_get(get, Url),
+    {List} = jiffy:decode(Result),
+    {_, Pwd} = lists:keyfind(<<"Pwd">>, 1, List),
+    case PassWord == Pwd of
+	true ->
 	    tools:json_response(200, Result);
 	false ->
 	    tools:json_response(401)
     end;
+    %% 	false ->
+    %% 	    tools:json_response(401)
+    %% end;
 process(_, #request{method = 'DELETE', 
 		    path = [ <<"api">>, <<"user">>, <<"delete">> ], 
 		    headers = Headers,
@@ -83,5 +89,6 @@ process(_, #request{method = 'DELETE',
 	false ->
 	    tools:json_response(401)
     end;
-process(_, _) ->
+process(_, Req) ->
+    io:format("~p", Req),
     tools:json_response(404, "").
