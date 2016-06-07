@@ -94,7 +94,7 @@ log_rate_limit: 100
 ##   - "example.org"
 ##
 hosts:
-  - "localhost"
+  - "im.com"
 
 ##
 ## route_subdomains: Delegate subdomains to other XMPP servers.
@@ -240,11 +240,11 @@ listen:
 ##
 auth_method: internal
 #auth_method: redis
-redis_server: "127.0.0.1"
+redis_server: "im.com"
 redis_port: 6379
 redis_password: "123456"
 #golangapi
-golangapihost: "127.0.0.1"
+golangapihost: "im.com"
 golangapiport: "8080"
 ##redis_db: "User"
 ##
@@ -415,9 +415,9 @@ acl:
   ## The 'admin' ACL grants administrative privileges to XMPP accounts.
   ## You can put here as many accounts as you want.
   ##
-  ## admin:
-  ##   user:
-  ##     - "aleksey": "localhost"
+  admin:
+     user:
+       - "admin": "im.com"
   ##     - "ermine": "example.org"
   ##
   ## Blocked users
@@ -518,11 +518,11 @@ access:
     all: allow
   ## Only allow to register from localhost
   trusted_network: 
-    loopback: allow
+    all: allow
   ## Do not establish S2S connections with bad servers
-  ## s2s: 
+  s2s: 
   ##   bad_servers: deny
-  ##   all: allow
+     all: allow
 
 ## By default the frequency of account registrations from the same IP
 ## is limited to 1 account every 10 minutes. To disable, specify: infinity
@@ -629,29 +629,29 @@ modules:
       - "flat"
       - "hometree"
       - "pep" # pep requires mod_caps
-  ## mod_register:
+  mod_register:
     ##
     ## Protect In-Band account registrations with CAPTCHA.
     ##
-    ##   captcha_protected: true
+    ##  captcha_protected: true
     ##
     ## Set the minimum informational entropy for passwords.
     ##
-    ##   password_strength: 32
+    ## password_strength: 32
     ##
     ## After successful registration, the user receives
     ## a message with this subject and body.
     ##
-    ##   welcome_message:
-    ##     subject: "Welcome!"
-    ##     body: |-
+    ##  welcome_message:
+    ##    subject: "Welcome!"
+    ##    body: |-
     ##       Hi.
     ##       Welcome to this XMPP server.
     ##
     ## When a user registers, send a notification to
     ## these XMPP accounts.
     ##
-    ##   registration_watchers:
+    ##  registration_watchers:
     ##     - "admin1@example.org"
     ##
     ## Only clients in the server machine can register accounts
@@ -660,8 +660,8 @@ modules:
     ##
     ## Local c2s or remote s2s users cannot register accounts
     ##
-    ##   access_from: deny
-    ##   access: register
+    ##  access_from: deny
+      access: register
   mod_roster: {}
   mod_shared_roster: {}
   mod_stats: {}

@@ -43,14 +43,20 @@ process(_, #request{method = 'POST',
 		    {ResultList} = jiffy:decode(Result),
 		    {_, ObjectId} = lists:keyfind(<<"ObjectId">>, 1, ResultList),
 		    if ObjectId /= "" ->
-			    case mod_redis:set_kv(#kv{key = ObjectId, value = Pwd}) of
-				ok -> 
-				    tools:json_response(200, [jiffy:encode({[{state, <<"ok">>}]})]);
-				err ->
-				    TranUrl = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/delete/",ObjectId])),
-				    tools:http_get(delete, TranUrl),
-				    tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])
+			    case ejabberd_auth:try_register(Name, <<"im.com">>, Pwd) of
+				{atomic, ok} ->
+				    case mod_redis:set_kv(#kv{key = ObjectId, value = Pwd}) of
+					ok -> 
+					    tools:json_response(200, [jiffy:encode({[{state, <<"ok">>}]})]);
+					err ->
+					    TranUrl = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/delete/",ObjectId])),
+					    tools:http_get(delete, TranUrl),
+					    tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])
+				    end,
+				    Error ->
+					tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])	     
 			    end
+			    
 		    end;
 		_ ->
 		    tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])
