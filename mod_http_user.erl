@@ -52,7 +52,7 @@ process(_, #request{method = 'POST',
 					    TranUrl = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/delete/",ObjectId])),
 					    tools:http_get(delete, TranUrl),
 					    tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])
-				    end,
+				    end;
 				    Error ->
 					tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])	     
 			    end
