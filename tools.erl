@@ -58,7 +58,8 @@
 	 hash_sha256_string/1,
 	 http_get_file/2,
 	 http_get/2,
-	 http_post/4]).
+	 http_post/4,
+	 getconfig/3]).
 
 start(_Host, _Opts) ->
     ok.
@@ -198,4 +199,12 @@ http_post(Mothed, Url, ContentType, Data) ->
         {error, {_,_,Result}}->io:format("error cause ~p~n",[Result])
     end.
 
-
+getconfig(Config_Str, Fun ,Defaults) ->
+    if Fun /= null ->
+	    ejabberd_config:get_option(Config_Str, Fun, Defaults);
+       Fun == null ->
+	    ejabberd_config:get_option(Config_Str, fun iolist_to_list/1, Defaults)
+    end.
+    
+iolist_to_list(IOList) ->
+    binary_to_list(iolist_to_binary(IOList)).
