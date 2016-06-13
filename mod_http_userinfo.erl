@@ -35,7 +35,8 @@ process(_, #request{method = 'POST',
 		    path = [ <<"api">>, <<"userinfo">>, <<"create">> ], 
 		    headers = Headers,
 		    data = Data}) ->
-    case tools:http_post(post, get_url("create"), "application/json", Data) of
+    Url = tools:get_url("golangapi", "userinfo", "/create"),
+    case tools:http_post(post, Url, "application/json", Data) of
     	{{_, 200, "OK"}, _, Result} ->
     	    {ResultList} = jiffy:decode(Result),
 	    tools:json_response(200, Result);
@@ -49,7 +50,8 @@ process(_, #request{method = 'GET',
 		    path = [ <<"api">>, <<"userinfo">>, <<"id">> ], 
 		    headers = Headers,
 		    q = [{_, ObjectId}]}) ->
-    Result = tools:http_get(get, get_url(lists:append(["id/", binary_to_list(ObjectId)]))),
+    Url = tools:get_url("golangapi", "userinfo", lists:append(["/id/", binary_to_list(ObjectId)])),
+    Result = tools:http_get(get, Url),
     tools:json_response(200, [Result]);
 %%%------------------------------------------------------------
 %%% api/userinfo/delete?
@@ -58,7 +60,8 @@ process(_, #request{method = 'DELETE',
 		    path = [ <<"api">>, <<"userinfo">>, <<"delete">> ], 
 		    headers = Headers,
 		    q = [{_ , ObjectId}]}) ->
-    Result = tools:http_get(delete, get_url(lists:append(["delete/", binary_to_list(ObjectId)]))),
+    Url = tools:get_url("golangapi", "userinfo", lists:append(["/delete/", binary_to_list(ObjectId)])),
+    Result = tools:http_get(delete, Url),
     tools:json_response(200, [Result]);
 
 process(_, #request{method = 'POST',
@@ -66,7 +69,8 @@ process(_, #request{method = 'POST',
 		    headers = Headers,
 		    data = Data}) ->
     {_, ContentType} = lists:keyfind('Content-Type', 1, Headers),
-    case tools:http_post(post, get_url("uploadpic"), binary_to_list(ContentType), Data) of
+    Url = tools:get_url("golangapi", "userinfo", "/uploadpic"),
+    case tools:http_post(post, Url, binary_to_list(ContentType), Data) of
     	{{_, 200, "OK"}, _, Result} ->
     	    {ResultList} = jiffy:decode(Result),
     	    tools:json_response(200, Result);
@@ -76,7 +80,8 @@ process(_, #request{method = 'POST',
 process(_, #request{method = 'GET',
 		    path = [ <<"api">>, <<"userinfo">>, <<"downloadpic">> ], 
 		    q = [{_, ObjectId}]}) ->
-    {Headers, Result} = tools:http_get_file(get, get_url(lists:append(["downloadpic/", binary_to_list(ObjectId)]))),
+    Url = tools:get_url("golangapi", "userinfo", lists:append(["/downloadpic/", binary_to_list(ObjectId)])),
+    {Headers, Result} = tools:http_get_file(get, Url),
     {_, ContentType} = lists:keyfind("content-type", 1, Headers),
     tools:file_response(200, Result, ContentType);
 process(_, _) ->
@@ -85,12 +90,3 @@ process(_, _) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-iolist_to_list(IOList) ->
-    binary_to_list(iolist_to_binary(IOList)).
-
-get_url(ParStr) ->
-    Host = ejabberd_config:get_option(golangapihost, fun iolist_to_list/1, "localhost"),
-    Port = ejabberd_config:get_option(golangapiport, fun iolist_to_list/1, "8080"),
-    Mode = "userinfo",
-    Url = lists:append(["http://", Host, ":", Port, "/api/", Mode, "/"]),
-    lists:append([Url, ParStr]).

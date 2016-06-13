@@ -59,7 +59,7 @@
 	 http_get_file/2,
 	 http_get/2,
 	 http_post/4,
-	 getconfig/3]).
+	 get_url/3]).
 
 start(_Host, _Opts) ->
     ok.
@@ -198,6 +198,12 @@ http_post(Mothed, Url, ContentType, Data) ->
 	{ok, Result}-> Result;  
         {error, {_,_,Result}}->io:format("error cause ~p~n",[Result])
     end.
+
+get_url(ConfigMode, Mode, ParStr) ->
+    Host = getconfig(list_to_atom(lists:append([ConfigMode, "host"])), null, "localhost"),
+    Port = getconfig(list_to_atom(lists:append([ConfigMode, "port"])), null, "8080"),
+    Url = lists:append(["http://", Host, ":", Port, "/api/", Mode, "/"]),
+    lists:append([Url, ParStr]).
 
 getconfig(Config_Str, Fun ,Defaults) ->
     if Fun /= null ->

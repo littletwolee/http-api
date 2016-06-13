@@ -39,9 +39,7 @@ process(_, #request{method = 'POST',
 	    {List} = jiffy:decode(Data),
 	    {_, Name} = lists:keyfind(<<"name">>, 1, List),
 	    {_, Pwd} = lists:keyfind(<<"pwd">>, 1, List),
-            GolangAPIHost = tools:getconfig(golangapihost, null, "localhost"),
-            GolangAPIPort = tools:getconfig(golangapiport, null, "8080"),
-            Url = binary_to_list(lists:append([?HTTP, GolangAPIHost, ":", GolangAPIPort, ?API, ?MODULENAME, "/create"])),
+            Url = tools:get_url("golangapi", "user", "/create"),
 	    SendData = jiffy:encode({[{<<"name">>, Name},{<<"pwd">>, Pwd}]}),
 	    case tools:http_post(post, Url, "application/json", SendData) of
 		{{_, 200, "OK"}, _, Result} ->
@@ -75,10 +73,7 @@ process(_, #request{method = 'GET',
 		    q = [{<<"username">>, UserName}, {<<"password">>, PassWord}]}) ->
     %% case mod_versionrule:check_permissions(Headers) of
     %% 	true ->
-            GolangAPIHost = tools:getconfig(golangapihost, null, "localhost"),
-            GolangAPIPort = tools:getconfig(golangapiport, null, "8080"),
-            Url = binary_to_list(lists:append([?HTTP, GolangAPIHost, ":", GolangAPIPort, ?API, ?MODULENAME, "/name", UserName])),
-    io:format("~p", [Url]),
+            Url = tools:get_url("golangapi", "user", lists:append(["/name/", binary_to_list(UserName)])),
 	    Result = tools:http_get(get, Url),
             {List} = jiffy:decode(Result),
             {_, Pwd} = lists:keyfind(<<"Pwd">>, 1, List),
@@ -95,17 +90,14 @@ process(_, #request{method = 'DELETE',
 		    path = [ <<"api">>, <<"user">>, <<"delete">> ], 
 		    headers = Headers,
 		    q = [{_ , ObjectId}]}) ->
-    case mod_versionrule:check_permissions(Headers) of
-	true ->
-	    Url = binary_to_list(list_to_bitstring(["http://localhost:8080/api/user/delete/",ObjectId])),
-	    GolangAPIHost = tools:getconfig(golangapihost, null, "localhost"),
-            GolangAPIPort = tools:getconfig(golangapiport, null, "8080"),
-            Url = binary_to_list(lists:append([?HTTP, GolangAPIHost, ":", GolangAPIPort, ?API, ?MODULENAME, "/delete", ObjectId])),
+    %% case mod_versionrule:check_permissions(Headers) of
+    %% 	true ->
+            Url = tools:get_url("golangapi", "user", lists:append(["/delete/", binary_to_list(ObjectId)])),
 	    Result = tools:http_get(delete, Url),
-	    tools:json_response(200, [Result]);
-	false ->
-	    tools:json_response(401)
-    end;
+	    tools:json_response(200, [""]);
+	%% false ->
+    %% 	    tools:json_response(401)
+    %% end;
 %% process(_, #request{method = 'GET',
 %% 		   path = [ <<"api">>, <<"user">>, <<"test">>]
 %% 		   }) ->
@@ -113,3 +105,5 @@ process(_, #request{method = 'DELETE',
 process(_, Req) ->
     io:format("~p", Req),
     tools:json_response(404, "").
+
+
