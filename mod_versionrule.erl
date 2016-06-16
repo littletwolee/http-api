@@ -11,7 +11,7 @@
 
 -behaviour(gen_mod).
 
--export([start/2, stop/1, checktoken/4, check_permissions/1]).
+-export([start/2, stop/1, checktoken/3, check_permissions/1]).
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
@@ -28,7 +28,7 @@ stop(_Host) ->
 
 -spec check_permissions([]) -> boolean().
 check_permissions(Headers) ->
-    Authorization = case lists:keyfind('Authorization', 1, Headers) of
+    Timestamp = case lists:keyfind(<<"Timestamp">>, 1, Headers) of
 			{_, A} -> case is_binary(A) of
 				      true -> binary_to_list(A);
 				     false -> A
@@ -42,13 +42,6 @@ check_permissions(Headers) ->
 			  end;
 		false -> false
 	    end,
-    EncryptionToken = case lists:keyfind(<<"Encryptiontoken">>, 1, Headers) of
-			  {_, E} -> case is_binary(E) of
-					true -> binary_to_list(E);
-					false -> E
-				    end;
-			  false -> false
-		      end,
     Version = case lists:keyfind(<<"Version">>, 1, Headers) of
 			  {_, V} -> case is_binary(V) of
 					true -> binary_to_list(V);
@@ -56,22 +49,21 @@ check_permissions(Headers) ->
 				    end;
 			  false -> false
 		      end,
-    
-    case Authorization /= false andalso Token /= false andalso EncryptionToken /= false andalso Version /= false andalso
-	string:len(Authorization) == 64 andalso string:len(Token) == 64 andalso string:len(EncryptionToken) == 64 of
-	true -> mod_versionrule:checktoken(Version, Authorization, Token, EncryptionToken);
+    case Timestamp /= false andalso Token /= false andalso Version /= false andalso
+	string:len(Timestamp) == 13 andalso string:len(Token) == 64 of
+	true -> mod_versionrule:checktoken(Version, Timestamp, Token);
 	false -> false
     end.
 
--spec checktoken(binary(), binary(), binary(), binary()) -> boolean() | err.
-checktoken(Version, Authorization, Token, EncryptionToken) ->
+-spec checktoken(binary(), binary(), binary()) -> boolean() | err.
+checktoken(Version, Timestamp, Token) ->
     case getrule(Version) of
 	err -> err;
 	Rule -> 
-	    ListPar = rulesplit(Authorization, Rule),
-	    ListToken = rulesplit(Token, Rule),
+	    ListPar = rulesplit(tools:hash_sha256_string(Timestamp), Rule),
+	    ListToken = [Timestamp, Timestamp, Timestamp, Timestamp],
 	    string:equal(
-	      EncryptionToken, tools:hash_sha256_string(
+	      Token, tools:hash_sha256_string(
 				 string:join(
 				   lists:append(
 				     lists:zipwith(fun(X, Y) -> [X, Y] end, ListPar, ListToken)), "")))

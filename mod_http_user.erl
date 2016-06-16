@@ -33,9 +33,9 @@ stop(_Host) ->
 process(_, #request{method = 'POST', 
 		    path = [ <<"api">>, <<"user">>, <<"register">> ], 
 		    headers = Headers,
-		    data = Data}) ->
-    %% case mod_versionrule:check_permissions(Headers) of
-    %% 	true ->
+		    data = Data} = Req) ->
+    case mod_versionrule:check_permissions(Headers) of
+    	true ->
 	    {List} = jiffy:decode(Data),
 	    {_, Name} = lists:keyfind(<<"name">>, 1, List),
 	    {_, Pwd} = lists:keyfind(<<"pwd">>, 1, List),
@@ -64,15 +64,16 @@ process(_, #request{method = 'POST',
 		_ ->
 		    tools:json_response(200, [jiffy:encode({[{state, <<"err">>}]})])
 	    end;
-    %% 	false ->
-    %% 	    tools:json_response(401)
-    %% end;
+    	false ->
+    	    tools:json_response(401)
+    end;
 process(_, #request{method = 'GET', 
 		    path = [ <<"api">>, <<"user">>, <<"login">> ], 
 		    headers = Headers,
 		    q = [{<<"username">>, UserName}, {<<"password">>, PassWord}]}) ->
-    %% case mod_versionrule:check_permissions(Headers) of
-    %% 	true ->
+    
+    case mod_versionrule:check_permissions(Headers) of
+    	true ->
             Url = tools:get_url("golangapi", "user", lists:append(["/name/", binary_to_list(UserName)])),
 	    Result = tools:http_get(get, Url),
             {List} = jiffy:decode(Result),
@@ -83,9 +84,9 @@ process(_, #request{method = 'GET',
 	      false ->
 	          tools:json_response(401)
             end;
-    %% 	false ->
-    %% 	    tools:json_response(401)
-    %% end;
+    	false ->
+    	    tools:json_response(401)
+    end;
 process(_, #request{method = 'DELETE', 
 		    path = [ <<"api">>, <<"user">>, <<"delete">> ], 
 		    headers = Headers,
@@ -103,7 +104,6 @@ process(_, #request{method = 'DELETE',
 %% 		   }) ->
 %%     tools:json_response(200, [GolangAPIHost]);
 process(_, Req) ->
-    io:format("~p", Req),
     tools:json_response(404, "").
 
 
